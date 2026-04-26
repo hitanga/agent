@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My AI Agent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial; background: #111; color: #fff; text-align: center; }
+    button { padding: 10px 20px; margin: 10px; border-radius: 10px; border: none; }
+    #video { width: 90%; border-radius: 10px; }
+    #chat { height: 200px; overflow-y: auto; border: 1px solid #444; padding: 10px; }
+    input { width: 80%; padding: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>🤖 My AI Agent</h2>
+
+<div id="chat"></div>
+
+<input id="textInput" placeholder="Ask something..." />
+<button onclick="sendText()">Send</button>
+
+<br>
+
+<button onclick="startVoice()">🎤 Speak</button>
+<button onclick="startCamera()">📷 Open Camera</button>
+
+<video id="video" autoplay></video>
+
+<script>
+// CHAT DISPLAY
+function addMessage(msg) {
+  document.getElementById("chat").innerHTML += "<p>" + msg + "</p>";
+}
+
+// TEXT INPUT
+async function sendText() {
+  let text = document.getElementById("textInput").value;
+  addMessage("You: " + text);
+
+  try {
+    let res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=YOUR_NEW_API_KEY",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: text }]
+            }
+          ]
+        })
+      }
+    );
+
+    let data = await res.json();
+    console.log("FULL RESPONSE:", data);
+
+    if (data.error) {
+      addMessage("❌ Error: " + data.error.message);
+      return;
+    }
+
+    let reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!reply) {
+      addMessage("⚠️ No valid response from AI");
+      return;
+    }
+
+    addMessage("AI: " + reply);
+    speak(reply);
+
+  } catch (err) {
+    console.error(err);
+    addMessage("❌ Network or API error");
+  }
+}
+
+// VOICE INPUT
+function startVoice() {
+  let recognition = new webkitSpeechRecognition();
+  recognition.lang = "en-US";
+
+  recognition.onresult = function(event) {
+    let text = event.results[0][0].transcript;
+    document.getElementById("textInput").value = text;
+    sendText();
+  };
+
+  recognition.start();
+}
+
+// TEXT TO SPEECH
+function speak(text) {
+  let speech = new SpeechSynthesisUtterance(text);
+  speechSynthesis.speak(speech);
+}
+
+// CAMERA ACCESS
+async function startCamera() {
+  let stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  document.getElementById("video").srcObject = stream;
+}
+</script>
+
+</body>
+</html>
