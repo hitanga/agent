@@ -25,7 +25,7 @@
 <button onclick="startVoice()">🎤 Speak</button>
 <button onclick="startCamera()">📷 Open Camera</button>
 
-<video id="video" autoplay></video>
+<video id="video" autoplay playsinline></video>
 
 <script>
 // CHAT DISPLAY
@@ -39,22 +39,24 @@ async function sendText() {
   addMessage("You: " + text);
 
   try {
-    let res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=YOUR_NEW_API_KEY",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: text }]
-            }
-          ]
-        })
-      }
-    );
+    let res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": "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",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://hitanga.github.io/agent/",
+        "X-Title": "My AI Agent"
+      },
+      body: JSON.stringify({
+        model: "minimax/minimax-m2.5:free",
+        messages: [
+          {
+            role: "user",
+            content: text
+          }
+        ]
+      })
+    });
 
     let data = await res.json();
     console.log("FULL RESPONSE:", data);
@@ -64,19 +66,14 @@ async function sendText() {
       return;
     }
 
-    let reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!reply) {
-      addMessage("⚠️ No valid response from AI");
-      return;
-    }
+    let reply = data.choices?.[0]?.message?.content || "No response";
 
     addMessage("AI: " + reply);
     speak(reply);
 
   } catch (err) {
     console.error(err);
-    addMessage("❌ Network or API error");
+    addMessage("❌ Network error");
   }
 }
 
